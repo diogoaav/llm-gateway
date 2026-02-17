@@ -14,9 +14,7 @@ A FastAPI-based gateway that receives Anthropic-style API calls and converts the
 
 ## Quick Deploy
 
-[![Deploy to DO](https://www.deploytodo.com/do-btn-blue.svg)](https://cloud.digitalocean.com/apps/new?repo=https://github.com/YOUR_USERNAME/llm-gateway/tree/main)
-
-Replace `YOUR_USERNAME` with your GitHub username in the deploy button URL above.
+[![Deploy to DO](https://www.deploytodo.com/do-btn-blue.svg)](https://cloud.digitalocean.com/apps/new?repo=https://github.com/diogoaav/llm-gateway/tree/main)
 
 ## Configuration
 
@@ -120,7 +118,7 @@ Health check endpoint.
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/YOUR_USERNAME/llm-gateway.git
+git clone https://github.com/diogoaav/llm-gateway.git
 cd llm-gateway
 ```
 
