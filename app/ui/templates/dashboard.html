@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - LLM Gateway{% endblock %}
+{% block content %}
+<h1>Gateways</h1>
+<p><a href="/gateways/new" class="btn btn-primary">Add Gateway</a></p>
+{% if gateways %}
+<table class="table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Custom Model</th>
+            <th>Upstream</th>
+            <th>API Endpoint</th>
+            <th>Auth Token</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for g in gateways %}
+        <tr>
+            <td>{{ g.name }}</td>
+            <td><code>{{ g.custom_model_name }}</code></td>
+            <td><code>{{ g.upstream_base_url }}</code></td>
+            <td><code>/gateway/{{ g.id }}/v1/messages</code></td>
+            <td><code class="token" title="{{ g.auth_token }}">{{ g.auth_token[:16] }}...</code></td>
+            <td>
+                <a href="/gateways/{{ g.id }}/edit">Edit</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No gateways yet. <a href="/gateways/new">Add your first gateway</a>.</p>
+{% endif %}
+{% endblock %}

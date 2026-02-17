@@ -1,73 +1,66 @@
 """Main FastAPI application"""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import anthropic_router
-from app.middleware import auth_middleware
-from app.config import settings
+from fastapi.staticfiles import StaticFiles
 
-# Validate settings on startup
+from app.api import anthropic_router
+from app.api import gateways, logs, stats
+from app.ui.routes import router as ui_router
+from app.middleware.logging import request_logging_middleware
+from app.config import settings
+from app.db.database import init_db
+
 try:
     settings.validate()
 except ValueError as e:
     print(f"Configuration error: {e}")
     raise
 
-# Create FastAPI app
 app = FastAPI(
     title="LLM Gateway",
     description="Anthropic to OpenAI API Gateway",
-    version="1.0.0"
+    version="2.0.0",
 )
 
-# Log AUTH_TOKEN on startup if it was auto-generated
+
 @app.on_event("startup")
 async def startup_event():
-    if settings._auth_token_generated:
-        print("=" * 80)
-        print("AUTH_TOKEN was auto-generated. Use this token to authenticate:")
-        print(f"AUTH_TOKEN: {settings.auth_token}")
-        print("=" * 80)
-        print("\nYou can also retrieve it via GET /auth-token endpoint")
-        print("=" * 80)
+    init_db()
 
-# Add CORS middleware
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure as needed for production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Add authentication middleware
-@app.middleware("http")
-async def auth_middleware_wrapper(request, call_next):
-    return await auth_middleware(request, call_next)
 
-# Include routers
+@app.middleware("http")
+async def logging_wrapper(request, call_next):
+    return await request_logging_middleware(request, call_next)
+
+
 app.include_router(anthropic_router.router)
+app.include_router(gateways.router)
+app.include_router(logs.router)
+app.include_router(stats.router)
+app.include_router(ui_router)
+
+app.mount("/static", StaticFiles(directory="app/ui/static"), name="static")
 
 
 @app.get("/health")
 async def health():
-    """Health check endpoint"""
     return {"status": "ok"}
 
 
 @app.get("/")
 async def root():
-    """Root endpoint"""
     return {
         "service": "LLM Gateway",
-        "version": "1.0.0",
-        "status": "running"
-    }
-
-
-@app.get("/auth-token")
-async def get_auth_token():
-    """Get the AUTH_TOKEN (useful if it was auto-generated)"""
-    return {
-        "auth_token": settings.auth_token,
-        "note": "Use this token in the Authorization header or x-api-key header"
+        "version": "2.0.0",
+        "status": "running",
+        "ui": "/dashboard",
     }

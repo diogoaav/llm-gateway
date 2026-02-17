@@ -4,66 +4,61 @@ A FastAPI-based gateway that receives Anthropic-style API calls and converts the
 
 ## Features
 
-- ✅ Receives Anthropic `/v1/messages` API calls
-- ✅ Converts requests from Anthropic format to OpenAI format
-- ✅ Forwards requests to OpenAI-compatible providers
-- ✅ Converts responses back to Anthropic format
-- ✅ Supports streaming responses
-- ✅ Custom authentication token management
-- ✅ Custom model name mapping via configuration file
+- Web UI for managing multiple gateways (login-protected)
+- Multiple gateways: each with its own upstream URL, API key, and model mapping
+- Receives Anthropic-style API at `/gateway/{id}/v1/messages`
+- Converts requests/responses between Anthropic and OpenAI formats
+- Streaming support
+- Request logs and token usage statistics per gateway
+- Database-backed configuration (SQLite or PostgreSQL)
 
 ## Quick Deploy
 
 [![Deploy to DO](https://www.deploytodo.com/do-btn-blue.svg)](https://cloud.digitalocean.com/apps/new?repo=https://github.com/diogoaav/llm-gateway/tree/main)
 
+Deployment will create a dev database and prompt for:
+- `ADMIN_USERNAME` – login username for the UI
+- `ADMIN_PASSWORD` – login password for the UI
+
+Gateway configurations are added via the UI after deployment.
+
 ## Configuration
 
 ### Environment Variables
 
-The following environment variables are required:
+- `ADMIN_USERNAME`: Username for UI login (default: `admin`)
+- `ADMIN_PASSWORD`: Password for UI login (required)
+- `DATABASE_URL`: Database connection URL (optional; defaults to SQLite). On App Platform this is set automatically when you add a dev database.
 
-- `UPSTREAM_BASE_URL`: The base URL of your OpenAI-compatible provider (e.g., `https://inference.do-ai.run`)
-- `UPSTREAM_API_KEY`: The API key for your upstream provider
-- `UPSTREAM_MODEL`: The actual model name on your provider (e.g., `anthropic-claude-4.5-sonnet`)
-- `CUSTOM_MODEL_NAME`: The custom model name that clients will use (e.g., `do-anthropic-claude-4.5-sonnet`)
-
-**Note:** `AUTH_TOKEN` is automatically generated on first startup. You can retrieve it from the app logs or via the `/auth-token` endpoint.
-
-### Model Mapping
-
-Model mapping is configured via environment variables:
-
-- `UPSTREAM_MODEL`: The model name as it exists on your provider
-- `CUSTOM_MODEL_NAME`: The custom name that clients will use when making requests
-
-Example:
-- `UPSTREAM_MODEL=anthropic-claude-4.5-sonnet`
-- `CUSTOM_MODEL_NAME=do-anthropic-claude-4.5-sonnet`
-
-When clients request `do-anthropic-claude-4.5-sonnet`, the gateway will forward the request using `anthropic-claude-4.5-sonnet` to your provider.
+Gateways (upstream URL, API key, model names, auth token) are created and stored via the UI and database, not environment variables.
 
 ## Usage
 
+### Web UI
+
+1. Open `https://your-app-name.ondigitalocean.app/login` and sign in with `ADMIN_USERNAME` and `ADMIN_PASSWORD`.
+2. Go to Dashboard and click **Add Gateway**.
+3. Enter upstream base URL, API key, upstream model name, and custom model name. Save.
+4. Use the shown **API Endpoint** and **Auth Token** for that gateway in claude-code.
+
 ### Client Configuration (claude-code)
 
-1. After deploying, retrieve your `AUTH_TOKEN`:
-   - Check the app logs in DigitalOcean dashboard (it will be printed on startup)
-   - Or visit `https://your-app-name.ondigitalocean.app/auth-token`
-
-2. Configure claude-code to use this gateway:
+Use the gateway’s endpoint and token from the Dashboard:
 
 ```bash
 export ANTHROPIC_BASE_URL=https://your-app-name.ondigitalocean.app
-export ANTHROPIC_MODEL=do-anthropic-claude-4.5-sonnet  # Use your CUSTOM_MODEL_NAME
-export ANTHROPIC_AUTH_TOKEN=<your-auto-generated-token>
+export ANTHROPIC_MODEL=do-anthropic-claude-4.5-sonnet   # Your gateway’s custom model name
+export ANTHROPIC_AUTH_TOKEN=<gateway-auth-token>        # That gateway’s token from the UI
 export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1
 ```
 
+The API base URL is the same; the path includes the gateway ID: `/gateway/{gateway_id}/v1/messages`. Configure your client to use that full path (e.g. `ANTHROPIC_BASE_URL=https://your-app.ondigitalocean.app/gateway/1` so that requests go to `/gateway/1/v1/messages`).
+
 ### API Endpoints
 
-#### POST `/v1/messages`
+#### POST `/gateway/{gateway_id}/v1/messages`
 
-Anthropic-compatible messages endpoint.
+Anthropic-compatible messages endpoint for the given gateway. Send `Authorization: Bearer <gateway-auth-token>` or `x-api-key: <gateway-auth-token>`.
 
 **Request Example:**
 ```json
@@ -115,18 +110,6 @@ Health check endpoint.
 }
 ```
 
-#### GET `/auth-token`
-
-Get the auto-generated AUTH_TOKEN (useful after deployment).
-
-**Response:**
-```json
-{
-  "auth_token": "your-generated-token",
-  "note": "Use this token in the Authorization header or x-api-key header"
-}
-```
-
 ## Local Development
 
 ### Prerequisites
@@ -149,11 +132,8 @@ pip install -r requirements.txt
 
 3. Set environment variables:
 ```bash
-export UPSTREAM_BASE_URL=https://inference.do-ai.run
-export UPSTREAM_API_KEY=your-provider-api-key
-export UPSTREAM_MODEL=anthropic-claude-4.5-sonnet
-export CUSTOM_MODEL_NAME=do-anthropic-claude-4.5-sonnet
-# AUTH_TOKEN will be auto-generated if not set
+export ADMIN_PASSWORD=your-admin-password
+# Optional: DATABASE_URL for PostgreSQL; default is SQLite
 ```
 
 4. Run the application:
@@ -185,35 +165,19 @@ The API will be available at `http://localhost:8000`
 
 ## Deployment to DigitalOcean App Platform
 
-1. Push your code to a GitHub repository
-2. Click the "Deploy to DO" button above
-3. Fill in the required environment variables:
-   - `UPSTREAM_BASE_URL`: Your provider's base URL
-   - `UPSTREAM_API_KEY`: Your provider's API key
-   - `UPSTREAM_MODEL`: The model name on your provider
-   - `CUSTOM_MODEL_NAME`: The custom model name for clients
-4. Deploy!
-5. After deployment, retrieve your `AUTH_TOKEN`:
-   - Check the app logs in DigitalOcean dashboard (it will be printed on startup)
-   - Or visit `https://your-app-name.ondigitalocean.app/auth-token`
-
-**Note:** `AUTH_TOKEN` is automatically generated - you don't need to provide it during deployment.
-
-Alternatively, you can deploy manually:
-
-1. Go to [DigitalOcean App Platform](https://cloud.digitalocean.com/apps)
-2. Create a new app from GitHub
-3. Select your repository
-4. Configure environment variables (UPSTREAM_BASE_URL, UPSTREAM_API_KEY, UPSTREAM_MODEL, CUSTOM_MODEL_NAME)
-5. Deploy
-6. Retrieve the auto-generated AUTH_TOKEN from logs or `/auth-token` endpoint
+1. Push your code to a GitHub repository.
+2. Click the "Deploy to DO" button above.
+3. The template adds a dev database. Set:
+   - `ADMIN_USERNAME`: UI login username
+   - `ADMIN_PASSWORD`: UI login password
+4. Deploy. Then open the app URL, go to `/login`, sign in, and add gateways via the Dashboard.
 
 ## Security Considerations
 
-- All requests must include a valid `AUTH_TOKEN` in the Authorization header
-- The gateway forwards provider API keys securely (never exposed in responses)
-- Consider adding rate limiting for production use
-- Configure CORS appropriately for your use case
+- Each gateway has its own auth token; API requests must use the correct token in the Authorization or x-api-key header.
+- UI access is protected by ADMIN_USERNAME/ADMIN_PASSWORD.
+- Provider API keys are stored in the database and never exposed in API responses.
+- Consider rate limiting and CORS configuration for production.
 
 ## License
 

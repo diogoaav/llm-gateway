@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Stats - LLM Gateway{% endblock %}
+{% block content %}
+<h1>Token Usage</h1>
+<h2>Totals by Gateway</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Gateway</th>
+            <th>Requests</th>
+            <th>Input Tokens</th>
+            <th>Output Tokens</th>
+            <th>Total Tokens</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for g in gateways %}
+        <tr>
+            <td>{{ g.name }} ({{ g.custom_model_name }})</td>
+            <td>{{ gateway_totals[g.id].request_count }}</td>
+            <td>{{ gateway_totals[g.id].input_tokens }}</td>
+            <td>{{ gateway_totals[g.id].output_tokens }}</td>
+            <td>{{ gateway_totals[g.id].total_tokens }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<h2>Daily Usage (last 30 days)</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Gateway</th>
+            <th>Requests</th>
+            <th>Input</th>
+            <th>Output</th>
+            <th>Total</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for u in usage %}
+        <tr>
+            <td>{{ u.date }}</td>
+            <td>{{ gateway_names.get(u.gateway_id, u.gateway_id) }}</td>
+            <td>{{ u.request_count }}</td>
+            <td>{{ u.input_tokens }}</td>
+            <td>{{ u.output_tokens }}</td>
+            <td>{{ u.total_tokens }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% if not usage %}
+<p>No usage data yet.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{% if gateway %}Edit{% else %}New{% endif %} Gateway - LLM Gateway{% endblock %}
+{% block content %}
+<h1>{% if gateway %}Edit Gateway{% else %}Add Gateway{% endif %}</h1>
+<form id="gateway-form" class="form" data-action="{% if gateway %}/api/gateways/{{ gateway.id }}{% else %}/api/gateways{% endif %}" data-method="{{ 'PATCH' if gateway else 'POST' }}">
+    <label for="name">Name</label>
+    <input type="text" id="name" name="name" value="{{ gateway.name if gateway else '' }}" required placeholder="My Claude Gateway">
+    <label for="upstream_base_url">Upstream Base URL</label>
+    <input type="url" id="upstream_base_url" name="upstream_base_url" value="{{ gateway.upstream_base_url if gateway else '' }}" required placeholder="https://inference.do-ai.run">
+    <label for="upstream_api_key">Upstream API Key</label>
+    <input type="password" id="upstream_api_key" name="upstream_api_key" value="{{ gateway.upstream_api_key if gateway else '' }}" placeholder="{% if gateway %}Leave blank to keep current{% endif %}">
+    <label for="upstream_model">Upstream Model Name</label>
+    <input type="text" id="upstream_model" name="upstream_model" value="{{ gateway.upstream_model if gateway else '' }}" required placeholder="anthropic-claude-4.5-sonnet">
+    <label for="custom_model_name">Custom Model Name (for clients)</label>
+    <input type="text" id="custom_model_name" name="custom_model_name" value="{{ gateway.custom_model_name if gateway else '' }}" required placeholder="do-anthropic-claude-4.5-sonnet">
+    <div class="form-actions">
+        <button type="submit">{% if gateway %}Update{% else %}Create{% endif %} Gateway</button>
+        <a href="/dashboard" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+<script>
+document.getElementById('gateway-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const method = form.dataset.method;
+    const url = form.dataset.action;
+    const body = {
+        name: form.name.value,
+        upstream_base_url: form.upstream_base_url.value,
+        upstream_model: form.upstream_model.value,
+        custom_model_name: form.custom_model_name.value
+    };
+    if (form.upstream_api_key.value) body.upstream_api_key = form.upstream_api_key.value;
+    const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body)
+    });
+    if (res.ok) window.location.href = '/dashboard';
+    else alert('Error: ' + (await res.json()).detail || res.statusText);
+});
+</script>
+{% endblock %}

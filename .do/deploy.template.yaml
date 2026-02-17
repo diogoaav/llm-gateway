@@ -1,6 +1,9 @@
 spec:
   name: llm-gateway
   region: nyc
+  databases:
+    - name: dev-db
+      engine: PG
   services:
     - name: api
       github:
@@ -17,19 +20,15 @@ spec:
       health_check:
         http_path: /health
       envs:
-        - key: UPSTREAM_BASE_URL
-          value: ${UPSTREAM_BASE_URL}
+        - key: DATABASE_URL
+          value: ${dev-db.DATABASE_URL}
           scope: RUN_TIME
           type: SECRET
-        - key: UPSTREAM_API_KEY
-          value: ${UPSTREAM_API_KEY}
+        - key: ADMIN_USERNAME
+          value: ${ADMIN_USERNAME}
+          scope: RUN_TIME
+          type: GENERAL
+        - key: ADMIN_PASSWORD
+          value: ${ADMIN_PASSWORD}
           scope: RUN_TIME
           type: SECRET
-        - key: UPSTREAM_MODEL
-          value: ${UPSTREAM_MODEL}
-          scope: RUN_TIME
-          type: GENERAL
-        - key: CUSTOM_MODEL_NAME
-          value: ${CUSTOM_MODEL_NAME}
-          scope: RUN_TIME
-          type: GENERAL
