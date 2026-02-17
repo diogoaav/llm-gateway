@@ -25,11 +25,11 @@ spec:
           value: ${UPSTREAM_API_KEY}
           scope: RUN_TIME
           type: SECRET
-        - key: AUTH_TOKEN
-          value: ${AUTH_TOKEN}
+        - key: UPSTREAM_MODEL
+          value: ${UPSTREAM_MODEL}
           scope: RUN_TIME
-          type: SECRET
-        - key: MODEL_MAPPING_FILE
-          value: models.json
+          type: GENERAL
+        - key: CUSTOM_MODEL_NAME
+          value: ${CUSTOM_MODEL_NAME}
           scope: RUN_TIME
           type: GENERAL

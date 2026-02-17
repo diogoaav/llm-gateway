@@ -19,6 +19,17 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Log AUTH_TOKEN on startup if it was auto-generated
+@app.on_event("startup")
+async def startup_event():
+    if settings._auth_token_generated:
+        print("=" * 80)
+        print("AUTH_TOKEN was auto-generated. Use this token to authenticate:")
+        print(f"AUTH_TOKEN: {settings.auth_token}")
+        print("=" * 80)
+        print("\nYou can also retrieve it via GET /auth-token endpoint")
+        print("=" * 80)
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -50,4 +61,13 @@ async def root():
         "service": "LLM Gateway",
         "version": "1.0.0",
         "status": "running"
+    }
+
+
+@app.get("/auth-token")
+async def get_auth_token():
+    """Get the AUTH_TOKEN (useful if it was auto-generated)"""
+    return {
+        "auth_token": settings.auth_token,
+        "note": "Use this token in the Authorization header or x-api-key header"
     }

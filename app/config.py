@@ -1,8 +1,7 @@
 """Configuration management"""
 import os
-from pathlib import Path
+import secrets
 from typing import Dict, Optional
-import json
 
 
 class Settings:
@@ -11,28 +10,31 @@ class Settings:
     def __init__(self):
         self.upstream_base_url: str = os.getenv("UPSTREAM_BASE_URL", "")
         self.upstream_api_key: str = os.getenv("UPSTREAM_API_KEY", "")
+        
+        # Auto-generate AUTH_TOKEN if not provided
         self.auth_token: str = os.getenv("AUTH_TOKEN", "")
-        self.model_mapping_file: str = os.getenv("MODEL_MAPPING_FILE", "models.json")
+        if not self.auth_token:
+            # Generate a secure random token (32 bytes = 64 hex characters)
+            self.auth_token = secrets.token_urlsafe(32)
+            self._auth_token_generated = True
+        else:
+            self._auth_token_generated = False
+        
+        # Model mapping from environment variables
+        self.custom_model_name: str = os.getenv("CUSTOM_MODEL_NAME", "")
+        self.upstream_model: str = os.getenv("UPSTREAM_MODEL", "")
         self._model_mapping: Optional[Dict[str, str]] = None
     
     def load_model_mapping(self) -> Dict[str, str]:
-        """Load model name mapping from JSON file"""
+        """Load model name mapping from environment variables"""
         if self._model_mapping is not None:
             return self._model_mapping
         
-        mapping_path = Path(self.model_mapping_file)
-        if not mapping_path.exists():
-            # Return empty dict if file doesn't exist
-            self._model_mapping = {}
-            return self._model_mapping
+        self._model_mapping = {}
         
-        try:
-            with open(mapping_path, 'r') as f:
-                self._model_mapping = json.load(f)
-        except (json.JSONDecodeError, IOError) as e:
-            # Log error and return empty dict
-            print(f"Warning: Failed to load model mapping: {e}")
-            self._model_mapping = {}
+        # If both custom and upstream model names are provided, create mapping
+        if self.custom_model_name and self.upstream_model:
+            self._model_mapping[self.custom_model_name] = self.upstream_model
         
         return self._model_mapping
     
@@ -47,8 +49,6 @@ class Settings:
             raise ValueError("UPSTREAM_BASE_URL environment variable is required")
         if not self.upstream_api_key:
             raise ValueError("UPSTREAM_API_KEY environment variable is required")
-        if not self.auth_token:
-            raise ValueError("AUTH_TOKEN environment variable is required")
         return True
 
 

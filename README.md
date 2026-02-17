@@ -24,30 +24,38 @@ The following environment variables are required:
 
 - `UPSTREAM_BASE_URL`: The base URL of your OpenAI-compatible provider (e.g., `https://inference.do-ai.run`)
 - `UPSTREAM_API_KEY`: The API key for your upstream provider
-- `AUTH_TOKEN`: The authentication token clients must use to access this gateway
-- `MODEL_MAPPING_FILE`: Path to model mapping file (default: `models.json`)
+- `UPSTREAM_MODEL`: The actual model name on your provider (e.g., `anthropic-claude-4.5-sonnet`)
+- `CUSTOM_MODEL_NAME`: The custom model name that clients will use (e.g., `do-anthropic-claude-4.5-sonnet`)
+
+**Note:** `AUTH_TOKEN` is automatically generated on first startup. You can retrieve it from the app logs or via the `/auth-token` endpoint.
 
 ### Model Mapping
 
-Create a `models.json` file to map custom Anthropic model names to provider model names:
+Model mapping is configured via environment variables:
 
-```json
-{
-  "do-anthropic-claude-4.5-sonnet": "anthropic-claude-4.5-sonnet",
-  "custom-model-name": "provider-model-name"
-}
-```
+- `UPSTREAM_MODEL`: The model name as it exists on your provider
+- `CUSTOM_MODEL_NAME`: The custom name that clients will use when making requests
+
+Example:
+- `UPSTREAM_MODEL=anthropic-claude-4.5-sonnet`
+- `CUSTOM_MODEL_NAME=do-anthropic-claude-4.5-sonnet`
+
+When clients request `do-anthropic-claude-4.5-sonnet`, the gateway will forward the request using `anthropic-claude-4.5-sonnet` to your provider.
 
 ## Usage
 
 ### Client Configuration (claude-code)
 
-Configure claude-code to use this gateway:
+1. After deploying, retrieve your `AUTH_TOKEN`:
+   - Check the app logs in DigitalOcean dashboard (it will be printed on startup)
+   - Or visit `https://your-app-name.ondigitalocean.app/auth-token`
+
+2. Configure claude-code to use this gateway:
 
 ```bash
 export ANTHROPIC_BASE_URL=https://your-app-name.ondigitalocean.app
-export ANTHROPIC_MODEL=do-anthropic-claude-4.5-sonnet
-export ANTHROPIC_AUTH_TOKEN=your-auth-token
+export ANTHROPIC_MODEL=do-anthropic-claude-4.5-sonnet  # Use your CUSTOM_MODEL_NAME
+export ANTHROPIC_AUTH_TOKEN=<your-auto-generated-token>
 export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1
 ```
 
@@ -107,6 +115,18 @@ Health check endpoint.
 }
 ```
 
+#### GET `/auth-token`
+
+Get the auto-generated AUTH_TOKEN (useful after deployment).
+
+**Response:**
+```json
+{
+  "auth_token": "your-generated-token",
+  "note": "Use this token in the Authorization header or x-api-key header"
+}
+```
+
 ## Local Development
 
 ### Prerequisites
@@ -131,7 +151,9 @@ pip install -r requirements.txt
 ```bash
 export UPSTREAM_BASE_URL=https://inference.do-ai.run
 export UPSTREAM_API_KEY=your-provider-api-key
-export AUTH_TOKEN=your-gateway-auth-token
+export UPSTREAM_MODEL=anthropic-claude-4.5-sonnet
+export CUSTOM_MODEL_NAME=do-anthropic-claude-4.5-sonnet
+# AUTH_TOKEN will be auto-generated if not set
 ```
 
 4. Run the application:
@@ -166,18 +188,25 @@ The API will be available at `http://localhost:8000`
 1. Push your code to a GitHub repository
 2. Click the "Deploy to DO" button above
 3. Fill in the required environment variables:
-   - `UPSTREAM_BASE_URL`
-   - `UPSTREAM_API_KEY`
-   - `AUTH_TOKEN`
+   - `UPSTREAM_BASE_URL`: Your provider's base URL
+   - `UPSTREAM_API_KEY`: Your provider's API key
+   - `UPSTREAM_MODEL`: The model name on your provider
+   - `CUSTOM_MODEL_NAME`: The custom model name for clients
 4. Deploy!
+5. After deployment, retrieve your `AUTH_TOKEN`:
+   - Check the app logs in DigitalOcean dashboard (it will be printed on startup)
+   - Or visit `https://your-app-name.ondigitalocean.app/auth-token`
+
+**Note:** `AUTH_TOKEN` is automatically generated - you don't need to provide it during deployment.
 
 Alternatively, you can deploy manually:
 
 1. Go to [DigitalOcean App Platform](https://cloud.digitalocean.com/apps)
 2. Create a new app from GitHub
 3. Select your repository
-4. Configure environment variables
+4. Configure environment variables (UPSTREAM_BASE_URL, UPSTREAM_API_KEY, UPSTREAM_MODEL, CUSTOM_MODEL_NAME)
 5. Deploy
+6. Retrieve the auto-generated AUTH_TOKEN from logs or `/auth-token` endpoint
 
 ## Security Considerations
 
