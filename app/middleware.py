@@ -20,8 +20,8 @@ async def verify_auth_token(request: Request) -> bool:
     Raises:
         HTTPException if token is invalid or missing
     """
-    # Skip auth for health check and root endpoints
-    if request.url.path in ["/health", "/"]:
+    # Skip auth for health check, root, and auth-token endpoints
+    if request.url.path in ["/health", "/", "/auth-token"]:
         return True
     
     # Check for token in Authorization header or x-api-key header (Anthropic style)
