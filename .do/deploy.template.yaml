@@ -1,0 +1,35 @@
+spec:
+  name: llm-gateway
+  region: nyc
+  services:
+    - name: api
+      github:
+        repo: ${GITHUB_REPO}
+        branch: main
+        deploy_on_push: true
+      dockerfile_path: ""
+      build_command: ""
+      run_command: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+      environment_slug: python
+      instance_count: 1
+      instance_size_slug: basic-xxs
+      http_port: 8080
+      health_check:
+        http_path: /health
+      envs:
+        - key: UPSTREAM_BASE_URL
+          value: ${UPSTREAM_BASE_URL}
+          scope: RUN_TIME
+          type: SECRET
+        - key: UPSTREAM_API_KEY
+          value: ${UPSTREAM_API_KEY}
+          scope: RUN_TIME
+          type: SECRET
+        - key: AUTH_TOKEN
+          value: ${AUTH_TOKEN}
+          scope: RUN_TIME
+          type: SECRET
+        - key: MODEL_MAPPING_FILE
+          value: models.json
+          scope: RUN_TIME
+          type: GENERAL
