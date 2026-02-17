@@ -22,7 +22,11 @@
             <td><code>{{ g.custom_model_name }}</code></td>
             <td><code>{{ g.upstream_base_url }}</code></td>
             <td><code>/gateway/{{ g.id }}/v1/messages</code></td>
-            <td><code class="token" title="{{ g.auth_token }}">{{ g.auth_token[:16] }}...</code></td>
+            <td>
+                <code class="token" id="token-{{ g.id }}">{{ g.auth_token[:16] }}...</code>
+                <button onclick="toggleToken({{ g.id }}, '{{ g.auth_token }}')" class="btn-token">Show</button>
+                <button onclick="copyToken('{{ g.auth_token }}')" class="btn-token">Copy</button>
+            </td>
             <td>
                 <a href="/gateways/{{ g.id }}/edit">Edit</a>
             </td>
@@ -33,4 +37,30 @@
 {% else %}
 <p>No gateways yet. <a href="/gateways/new">Add your first gateway</a>.</p>
 {% endif %}
+<script>
+function toggleToken(id, fullToken) {
+    const elem = document.getElementById('token-' + id);
+    const btn = elem.nextElementSibling;
+    if (elem.textContent.includes('...')) {
+        elem.textContent = fullToken;
+        btn.textContent = 'Hide';
+    } else {
+        elem.textContent = fullToken.substring(0, 16) + '...';
+        btn.textContent = 'Show';
+    }
+}
+function copyToken(token) {
+    navigator.clipboard.writeText(token).then(() => {
+        alert('Token copied to clipboard!');
+    }).catch(() => {
+        const textarea = document.createElement('textarea');
+        textarea.value = token;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        alert('Token copied to clipboard!');
+    });
+}
+</script>
 {% endblock %}

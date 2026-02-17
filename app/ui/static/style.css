@@ -17,7 +17,10 @@ h1 { margin-top: 0; }
 .table th, .table td { padding: 0.5rem; text-align: left; border-bottom: 1px solid #eee; }
 .table th { background: #f8f8f8; }
 code { font-size: 0.85em; background: #f0f0f0; padding: 0.2em 0.4em; border-radius: 4px; }
-.token { cursor: help; }
+.token { cursor: help; word-break: break-all; display: inline-block; max-width: 300px; }
+.btn-token { padding: 0.25rem 0.5rem; margin-left: 0.5rem; font-size: 0.85em; background: #666; color: #fff; border: none; border-radius: 3px; cursor: pointer; }
+.btn-token:hover { background: #555; }
+.table td { vertical-align: middle; }
 .btn { display: inline-block; padding: 0.5rem 1rem; border-radius: 4px; text-decoration: none; }
 .btn-primary { background: #333; color: #fff; }
 .btn-secondary { background: #ccc; color: #333; margin-left: 0.5rem; }

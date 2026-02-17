@@ -1,9 +1,12 @@
 """Anthropic API router - path-based multi-gateway"""
+import json
+import logging
+from typing import Dict, Any, Optional
+
+import httpx
 from fastapi import APIRouter, Request, HTTPException, status, Depends
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from typing import Dict, Any
-import json
 
 from app.client import UpstreamClient
 from app.api.converter import (
@@ -17,7 +20,7 @@ from app.db import crud
 router = APIRouter()
 
 
-def _get_request_auth_token(request: Request) -> str | None:
+def _get_request_auth_token(request: Request) -> Optional[str]:
     auth_header = request.headers.get("Authorization")
     if auth_header:
         if auth_header.startswith("Bearer "):
@@ -83,14 +86,41 @@ async def messages(
             headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
         )
 
-    openai_response = await client.chat_completion(
-        model=provider_model,
-        messages=openai_request["messages"],
-        max_tokens=openai_request.get("max_tokens"),
-        temperature=openai_request.get("temperature"),
-        top_p=openai_request.get("top_p"),
-        stop=openai_request.get("stop"),
-    )
+    try:
+        openai_response = await client.chat_completion(
+            model=provider_model,
+            messages=openai_request["messages"],
+            max_tokens=openai_request.get("max_tokens"),
+            temperature=openai_request.get("temperature"),
+            top_p=openai_request.get("top_p"),
+            stop=openai_request.get("stop"),
+        )
+    except httpx.HTTPStatusError as e:
+        logging.warning(
+            "Upstream error: %s %s -> %s",
+            e.request.method,
+            e.request.url,
+            e.response.status_code,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail={
+                "type": "upstream_error",
+                "message": "Upstream provider returned an error",
+                "upstream_status": e.response.status_code,
+                "upstream_url": str(e.request.url),
+            },
+        )
+    except httpx.RequestError as e:
+        logging.warning("Upstream request failed: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail={
+                "type": "upstream_error",
+                "message": "Could not reach upstream provider",
+                "error": str(e),
+            },
+        )
 
     anthropic_response = convert_openai_to_anthropic_response(openai_response)
     anthropic_response["model"] = anthropic_model
